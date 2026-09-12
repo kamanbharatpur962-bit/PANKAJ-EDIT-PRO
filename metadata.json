@@ -1,0 +1,10 @@
+{
+  "name": "Pankaj Edit Pro",
+  "description": "Professional photo and video editing studio with interactive timeline Keyframe Editor and motion graph, 200+ clip animations, 300 filters, multi-track timeline, AI smart tools, and 4K export.",
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
