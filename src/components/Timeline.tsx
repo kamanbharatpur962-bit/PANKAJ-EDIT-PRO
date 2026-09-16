@@ -132,7 +132,7 @@ export const Timeline: React.FC<TimelineProps> = ({
   const [zoomLevel, setZoomLevel] = useState<number>(40); // 12 to 180 px/s
 
   // 2. VERTICAL HEIGHT (बड़ा करना)
-  const [timelineHeight, setTimelineHeight] = useState<number>(240); // 160 to 650 px
+  const [timelineHeight, setTimelineHeight] = useState<number>(220); // 160 to 650 px
   const [isResizingHeight, setIsResizingHeight] = useState<boolean>(false);
   const [isMaximized, setIsMaximized] = useState<boolean>(false);
 
@@ -215,11 +215,46 @@ export const Timeline: React.FC<TimelineProps> = ({
   const handleFitZoom = () => {
     if (!scrollContainerRef.current) return;
     const availableWidth = scrollContainerRef.current.clientWidth - 100;
-    const fittedZoom = Math.max(12, Math.min(180, Math.floor(availableWidth / totalDuration)));
+    const fittedZoom = Math.max(12, Math.min(500, Math.floor(availableWidth / totalDuration)));
     setZoomLevel(fittedZoom);
   };
 
   // Auto-scroll timeline to keep playhead in view when playing (never when scrubbing or dragging)
+  // Native wheel listener for smooth pinch-to-zoom and trackpad pan
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const onWheel = (e: WheelEvent) => {
+      if (e.ctrlKey) {
+        e.preventDefault(); // Prevent browser whole-page zoom
+        setZoomLevel((prevZoom) => {
+          // Calculate time under cursor before zoom
+          const rect = container.getBoundingClientRect();
+          const mouseX = e.clientX - rect.left;
+          const timeUnderCursor = (container.scrollLeft + mouseX) / prevZoom;
+          
+          // Apply zoom delta
+          const zoomFactor = -e.deltaY * 0.25; 
+          const newZoom = Math.max(8, Math.min(500, prevZoom + zoomFactor));
+          
+          // Adjust scroll position instantly to lock time under cursor
+          if (newZoom !== prevZoom) {
+            requestAnimationFrame(() => {
+              const newScrollLeft = timeUnderCursor * newZoom - mouseX;
+              container.scrollLeft = Math.max(0, newScrollLeft);
+            });
+          }
+          
+          return newZoom;
+        });
+      }
+    };
+
+    container.addEventListener('wheel', onWheel, { passive: false });
+    return () => container.removeEventListener('wheel', onWheel);
+  }, []);
+
   useEffect(() => {
     if (!scrollContainerRef.current || isScrubbing || draggingClipId) return;
     const playheadPx = currentTime * zoomLevel;
@@ -747,7 +782,7 @@ export const Timeline: React.FC<TimelineProps> = ({
           {/* Horizontal Zoom Controls ("जितना चोड़ा कर सके") */}
           <div className="flex items-center gap-1 bg-[#14141C] p-0.5 rounded-lg border border-[#222230]">
             <button 
-              onClick={() => setZoomLevel(Math.max(12, zoomLevel - 8))}
+              onClick={() => setZoomLevel(Math.max(12, zoomLevel - 20))}
               className="p-1 text-white/60 hover:text-white rounded"
               title="Zoom out (condense width)"
             >
@@ -785,7 +820,7 @@ export const Timeline: React.FC<TimelineProps> = ({
             </button>
 
             <button 
-              onClick={() => setZoomLevel(Math.min(180, zoomLevel + 8))}
+              onClick={() => setZoomLevel(Math.min(500, zoomLevel + 20))}
               className="p-1 text-white/60 hover:text-white rounded"
               title="Zoom in (expand width)"
             >

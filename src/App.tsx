@@ -38,6 +38,7 @@ import { EffectsPanel } from "./components/panels/EffectsPanel";
 import { AIPanel } from "./components/panels/AIPanel";
 import { TemplatesPanel } from "./components/panels/TemplatesPanel";
 import { KeyframeEditorPanel } from "./components/panels/KeyframeEditorPanel";
+import { MaskPanel } from "./components/panels/MaskPanel";
 import { multiTrackAudioEngine } from "./utils/audioEngine";
 
 // Bottom Tool Sheets & Header
@@ -59,6 +60,7 @@ import { AddMediaModal } from "./components/modals/AddMediaModal";
 import { ExportModal } from "./components/modals/ExportModal";
 import { SmartCutModal } from "./components/modals/SmartCutModal";
 import { ReorderClipsModal } from "./components/modals/ReorderClipsModal";
+import { AIFeatureModal } from "./components/modals/AIFeatureModal";
 import { PWABadge } from "./components/PWABadge";
 
 import { applySmartCutsToProject } from "./utils/smartCutApplier";
@@ -92,6 +94,7 @@ export default function App() {
   const [isExportModalOpen, setIsExportModalOpen] = useState<boolean>(false);
   const [isSmartCutModalOpen, setIsSmartCutModalOpen] = useState<boolean>(false);
   const [isReorderModalOpen, setIsReorderModalOpen] = useState<boolean>(false);
+  const [activeAIFeature, setActiveAIFeature] = useState<string | null>(null);
 
   // Saved collections for Home Dashboard
   const [savedProjects, setSavedProjects] = useState<VideoProject[]>([
@@ -634,6 +637,17 @@ export default function App() {
   }, [currentTime, project, updateProjectWithHistory]);
 
   const handleDeleteFilterItem = useCallback((filterId: string) => {
+    if (filterId === "flt-default-global") {
+      updateProjectWithHistory({
+        ...project,
+        activeFilter: "none",
+        filterIntensity: 100,
+        updatedAt: Date.now(),
+      });
+      setSelectedFilterId(null);
+      return;
+    }
+
     const updated = (project.filterTracks || []).filter((f) => f.id !== filterId);
     updateProjectWithHistory({
       ...project,
@@ -887,6 +901,15 @@ export default function App() {
   );
 
   // Home Screen: Start Blank Timeline Project
+    const handleRestoreProjects = (restoredProjects: VideoProject[]) => {
+    // Merge restored projects, avoiding duplicates by ID
+    setSavedProjects((prev) => {
+      const existingIds = new Set(prev.map(p => p.id));
+      const newProjects = restoredProjects.filter(p => !existingIds.has(p.id));
+      return [...newProjects, ...prev];
+    });
+  };
+
   const handleStartBlankProject = useCallback((aspectRatio: AspectRatio = "9:16") => {
     const blankProj: VideoProject = {
       ...createInitialProject(),
@@ -1004,6 +1027,7 @@ export default function App() {
             setIsAddMediaModalOpen(true);
           }}
           onOpenNewProjectPicker={handleOpenNewProjectPicker}
+          onOpenFeature={setActiveAIFeature}
           currentProject={project}
           savedProjects={savedProjects}
           drafts={drafts}
@@ -1102,7 +1126,7 @@ export default function App() {
           />
 
           {/* Bottom Active Tool Drawer: Renders above the toolbar when an editing tool is open */}
-          {activeTab !== null && (
+          {activeTab !== null ? (
             <div className={`border-t border-[#1E1E28] bg-[#121218] flex flex-col shrink-0 overflow-hidden shadow-2xl z-30 transition-all ${
               activeTab === "keyframe" || activeTab === "audioMixer" ? "h-84 sm:h-96 lg:h-[440px]" : "h-64 sm:h-72 lg:h-80"
             }`}>
@@ -1129,6 +1153,16 @@ export default function App() {
                   onClose={() => setActiveTab(null)}
                   onOpenAddAudioModal={() => setActiveTab("audio")}
                 />
+              )}
+
+              {activeTab === "mask" && selectedClipId && (
+                <div className="absolute inset-0 bg-[#181818] z-20 flex flex-col rounded-t-[24px]">
+                  <MaskPanel
+                    clip={project.clips.find(c => c.id === selectedClipId)!}
+                    onUpdate={(updates) => handleUpdateClip(selectedClipId, updates)}
+                    onClose={() => setActiveTab(null)}
+                  />
+                </div>
               )}
 
               {activeTab === "speed" && (
@@ -1567,10 +1601,8 @@ export default function App() {
                 </div>
               )}
             </div>
-          )}
-
-          {/* Bottom Dock Navigation Toolbar: Mode 1 (Main Tools) & Mode 2 (Clip Edit Tools) */}
-          <Toolbar
+          ) : (
+            <Toolbar
             activeTab={activeTab}
             onSelectTab={setActiveTab}
             selectedClipId={selectedClipId}
@@ -1596,6 +1628,7 @@ export default function App() {
               setIsAddMediaModalOpen(true);
             }}
           />
+          )}
         </div>
       )}
 
@@ -1679,6 +1712,13 @@ export default function App() {
         project={project}
         onSaveExportedVideo={handleSaveExportedVideo}
       />
+      {/* 5. Generic AI Feature Modal for Home Screen */}
+      <AIFeatureModal
+        isOpen={!!activeAIFeature}
+        onClose={() => setActiveAIFeature(null)}
+        featureId={activeAIFeature || ""}
+      />
+
       <PWABadge />
     </div>
   );

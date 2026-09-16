@@ -1,4 +1,7 @@
-import React from "react";
+const fs = require('fs');
+let content = fs.readFileSync('src/components/Toolbar.tsx', 'utf8');
+
+const replacement = `import React from "react";
 import {
   Scissors,
   Music,
@@ -6,7 +9,6 @@ import {
   ImageIcon,
   Star,
   Subtitles,
-  Mic2,
   Smartphone,
   Sliders,
   SlidersHorizontal,
@@ -30,7 +32,6 @@ import {
   Square,
   Aperture,
   SquareDashed,
-  ScanFace,
   Wand2
 } from "lucide-react";
 import { ActiveToolTab } from "../types";
@@ -96,12 +97,6 @@ export const Toolbar: React.FC<ToolbarProps> = ({
       label: "Text",
       icon: <Type className="w-[22px] h-[22px]" />,
       onClick: () => onSelectTab(activeTab === "text" ? null : "text")
-    },
-    {
-      id: "song_to_text",
-      label: "Song to Text",
-      icon: <Mic2 className="w-[22px] h-[22px]" />,
-      onClick: () => onSelectTab(activeTab === "song_to_text" ? null : "song_to_text")
     },
     {
       id: "overlay",
@@ -213,12 +208,6 @@ export const Toolbar: React.FC<ToolbarProps> = ({
       onClick: () => onSelectTab(activeTab === "adjust" ? null : "adjust")
     },
     {
-      id: "mask",
-      label: "Mask",
-      icon: <ScanFace className="w-[22px] h-[22px]" />,
-      onClick: () => onSelectTab(activeTab === "mask" ? null : "mask")
-    },
-    {
       id: "replace",
       label: "Replace",
       icon: <Repeat className="w-[22px] h-[22px]" />,
@@ -262,11 +251,11 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           return (
             <button
               key={tab.id}
-              id={`tool-btn-${tab.id}`}
+              id={\`tool-btn-\${tab.id}\`}
               onClick={tab.onClick}
-              className={`flex flex-col items-center justify-center transition-all active:scale-95 shrink-0 ${
+              className={\`flex flex-col items-center justify-center transition-all active:scale-95 shrink-0 \${
                 isActive ? "text-white" : "text-white/60 hover:text-white"
-              }`}
+              }\`}
             >
               <div className="p-1 mb-0.5">
                 {tab.icon}
@@ -281,3 +270,6 @@ export const Toolbar: React.FC<ToolbarProps> = ({
     </nav>
   );
 };
+`
+fs.writeFileSync('src/components/Toolbar.tsx', replacement);
+console.log('Done Toolbar');

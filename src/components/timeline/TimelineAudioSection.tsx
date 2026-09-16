@@ -739,31 +739,44 @@ const AudioTrackLane: React.FC<AudioTrackLaneProps> = ({
             })}
 
             {/* Individual Audio Track Clips */}
-            {tracks.map((audio) => {
-              const audioWidth = Math.max(28, (audio.trimEnd - audio.trimStart) * zoomLevel);
-              const audioLeft = audio.startTime * zoomLevel;
-              const isSelected = activeSelectedAudioId === audio.id;
-
-              return (
-                <div
-                  key={audio.id}
-                  data-no-scrub="true"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onSelectAudioTrack(audio.id);
-                  }}
-                  onMouseDown={(e) => onAudioMoveDragStart(e, audio)}
-                  onTouchStart={(e) => onAudioMoveDragStart(e, audio)}
-                  className={`absolute top-1 bottom-1 rounded-lg overflow-hidden border flex items-center px-2 z-10 cursor-grab active:cursor-grabbing transition-all select-none shadow-sm ${
-                    themeStyles.clipBg
-                  } ${themeStyles.border} ${themeStyles.accentBorder} ${
-                    isSelected ? "ring-2 ring-white shadow-xl scale-[1.01]" : ""
-                  }`}
-                  style={{
-                    left: `${audioLeft}px`,
-                    width: `${audioWidth}px`,
-                  }}
-                >
+            {tracks.length === 0 ? (
+              <div 
+                className="absolute left-2 top-1 bottom-1 flex items-center justify-center px-3 rounded-lg border border-dashed border-white/20 text-white/50 hover:text-white/80 hover:bg-white/5 hover:border-white/40 cursor-pointer transition-colors"
+                onClick={onOpenAddAudioModal}
+                data-no-scrub="true"
+              >
+                <div className="flex items-center gap-1.5 pointer-events-none">
+                  <div className="w-4 h-4 rounded-sm bg-white/10 flex items-center justify-center">
+                    <span className="text-xs font-bold leading-none mb-[1px]">+</span>
+                  </div>
+                  <span className="text-[10px] font-semibold">Add audio</span>
+                </div>
+              </div>
+            ) : (
+              tracks.map((audio) => {
+                const audioWidth = Math.max(28, (audio.trimEnd - audio.trimStart) * zoomLevel);
+                const audioLeft = audio.startTime * zoomLevel;
+                const isSelected = activeSelectedAudioId === audio.id;
+                return (
+                  <div
+                    key={audio.id}
+                    data-no-scrub="true"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSelectAudioTrack(audio.id);
+                    }}
+                    onMouseDown={(e) => onAudioMoveDragStart(e, audio)}
+                    onTouchStart={(e) => onAudioMoveDragStart(e, audio)}
+                    className={`absolute top-1 bottom-1 rounded-lg overflow-hidden border flex items-center px-2 z-10 cursor-grab active:cursor-grabbing transition-all select-none shadow-sm ${
+                      themeStyles.clipBg
+                    } ${themeStyles.border} ${themeStyles.accentBorder} ${
+                      isSelected ? "ring-2 ring-white shadow-xl scale-[1.01]" : ""
+                    }`}
+                    style={{
+                      left: `${audioLeft}px`,
+                      width: `${audioWidth}px`,
+                    }}
+                  >
                   <div className="flex items-center gap-1 min-w-0 mr-1.5 shrink-0">
                     <span className={themeStyles.text}>{icon}</span>
                     <span className={`text-[10px] font-bold truncate max-w-[90px] sm:max-w-[130px] ${themeStyles.text}`}>
@@ -771,15 +784,23 @@ const AudioTrackLane: React.FC<AudioTrackLaneProps> = ({
                     </span>
                   </div>
 
-                  {/* Waveform Visualization Bars */}
-                  <div className="ml-auto flex items-center gap-0.5 opacity-80 shrink-0">
-                    {[8, 14, 6, 18, 10, 16, 8, 12, 20, 10].map((h, i) => (
-                      <div
-                        key={i}
-                        className={`w-[2px] rounded-full ${themeStyles.waveform}`}
-                        style={{ height: `${Math.max(4, Math.round(h * (laneHeight / 44)))}px` }}
-                      />
-                    ))}
+                  {/* Procedural Continuous Waveform */}
+                  <div className="absolute inset-0 top-5 bottom-1 opacity-25 overflow-hidden pointer-events-none flex items-end">
+                    <svg width="100%" height="100%" preserveAspectRatio="none">
+                      <pattern id={`wave-${audio.id}`} x="0" y="0" width="40" height="20" patternUnits="userSpaceOnUse">
+                         <rect x="2" y="8" width="2" height="12" rx="1" fill="currentColor" />
+                         <rect x="6" y="4" width="2" height="16" rx="1" fill="currentColor" />
+                         <rect x="10" y="10" width="2" height="10" rx="1" fill="currentColor" />
+                         <rect x="14" y="2" width="2" height="18" rx="1" fill="currentColor" />
+                         <rect x="18" y="6" width="2" height="14" rx="1" fill="currentColor" />
+                         <rect x="22" y="12" width="2" height="8" rx="1" fill="currentColor" />
+                         <rect x="26" y="4" width="2" height="16" rx="1" fill="currentColor" />
+                         <rect x="30" y="10" width="2" height="10" rx="1" fill="currentColor" />
+                         <rect x="34" y="6" width="2" height="14" rx="1" fill="currentColor" />
+                         <rect x="38" y="14" width="2" height="6" rx="1" fill="currentColor" />
+                      </pattern>
+                      <rect x="0" y="0" width="100%" height="100%" fill={`url(#wave-${audio.id})`} className={themeStyles.text} />
+                    </svg>
                   </div>
 
                   {/* Trim Handles for Start and End */}
@@ -808,7 +829,8 @@ const AudioTrackLane: React.FC<AudioTrackLaneProps> = ({
                   )}
                 </div>
               );
-            })}
+            })
+            )}
           </>
         )}
       </div>

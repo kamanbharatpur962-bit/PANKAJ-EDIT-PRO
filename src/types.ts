@@ -50,7 +50,7 @@ export interface SpeedRampPoint {
   speed: number;   // 0.2x to 4x
 }
 
-export type MaskShape = "none" | "linear" | "radial" | "rectangle" | "heart" | "star";
+export type MaskShape = "none" | "linear" | "radial" | "rectangle" | "heart" | "star" | "circle" | "horizontal";
 
 export interface Clip {
   id: string;
@@ -364,28 +364,39 @@ export interface VideoProject {
   audioMixer?: AudioMixerSettings;
 }
 
+export interface TemplateSlot {
+  id: number;
+  type: "video" | "photo" | "any";
+  duration: number;
+  transition?: string;
+  effect?: string;
+}
+
 export interface VideoTemplate {
   id: string;
   name: string;
   category: 
-    | "Instagram Reels"
-    | "YouTube Shorts"
-    | "Travel videos"
-    | "Wedding videos"
-    | "Birthday videos"
-    | "Cinematic videos"
-    | "Motivational videos"
-    | "Status videos"
-    | "Beat-sync edits"
-    | "Slow-motion edits"
-    | "Photo montage"
-    | "Festival videos";
+    | "Cinematic"
+    | "Trending"
+    | "Slow Motion"
+    | "Beat Sync"
+    | "Velocity"
+    | "Show Motion"
+    | "Travel"
+    | "Birthday"
+    | "Wedding"
+    | "Instagram/Reels"
+    | "Shorts"
+    | "Status"
+    | "Photo + Video"
+    | "Beat Music";
   aspectRatio: AspectRatio;
   duration: number;
   previewUrl: string;
   description: string;
   badge: string;
   clipCount: number;
+  slots: TemplateSlot[];
   musicTitle: string;
   defaultFilter: FilterType;
   projectPreset: Partial<VideoProject>;
@@ -420,3 +431,26 @@ export type TemplateItem = VideoTemplate;
 export type TemplateCategory = string;
 export type TextAnimation = TextAnimationType;
 
+
+export type ActiveToolTab = 
+  | "edit"
+  | "audio"
+  | "text" 
+  | "overlay" 
+  | "effects" 
+  | "captions" 
+  | "aspect" 
+  | "filters" 
+  | "adjust" 
+  | "stickers" 
+  | "background"
+  | "speed"
+  | "animations"
+  | "volume"
+  | "crop"
+  | "color"
+  | "song_to_text"
+  | "ai"
+  | "templates"
+  | "keyframe"
+  | "mask";

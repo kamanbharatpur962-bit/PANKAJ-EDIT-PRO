@@ -19,7 +19,13 @@ import {
   Ban,
   Zap,
   Clock,
-  Flame
+  Flame,
+  LogIn,
+  LogOut,
+  Repeat,
+  Layers,
+  Video,
+  Activity
 } from "lucide-react";
 import { ANIMATIONS_200, ANIMATION_CATEGORIES, AnimationCategory, AnimationPreset200 } from "../../data/animations200";
 
@@ -31,26 +37,26 @@ interface SheetHeaderProps {
 }
 
 export const SheetHeader: React.FC<SheetHeaderProps> = ({ title, icon, onClose, onReset }) => (
-  <div className="h-10 px-4 border-b border-[#22222E] flex items-center justify-between bg-[#121218] shrink-0">
-    <div className="flex items-center gap-2 text-white font-semibold text-xs">
-      <span className="text-[#00E5FF]">{icon}</span>
+  <div className="flex items-center justify-between px-4 h-12 shrink-0 border-b border-white/5 bg-[#181818]">
+    <div className="flex items-center gap-2 text-white font-medium text-[15px]">
+      <span className="text-[#00E5FF] opacity-80">{icon}</span>
       <span>{title}</span>
     </div>
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-3">
       {onReset && (
         <button
           onClick={onReset}
-          className="text-[11px] text-[#888898] hover:text-white px-2 py-0.5 rounded transition-colors"
+          className="text-[12px] text-white/50 hover:text-white transition-colors"
         >
           Reset
         </button>
       )}
       <button
         onClick={onClose}
-        className="w-7 h-7 rounded-full bg-[#00E5FF] text-black font-bold flex items-center justify-center hover:brightness-110 active:scale-95 transition-all shadow-md shadow-[#00E5FF]/20"
+        className="p-1.5 active:scale-95 transition-transform"
         title="Apply and Close"
       >
-        <Check className="w-4 h-4 stroke-[3]" />
+        <Check className="w-6 h-6 text-white" strokeWidth={2} />
       </button>
     </div>
   </div>
@@ -289,24 +295,36 @@ interface AnimationsSheetProps {
   onClose: () => void;
 }
 
+const getAnimationImage = (anim: AnimationPreset200) => {
+  if (anim.category === "Beat & Flash") {
+    return "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=100&h=100&fit=crop&q=80";
+  } else if (anim.category === "3D & Warp") {
+    return "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=100&h=100&fit=crop&q=80";
+  } else if (anim.category === "Cinematic Camera") {
+    return "https://images.unsplash.com/photo-1601513445506-2ab0d4fb4229?w=100&h=100&fit=crop&q=80";
+  } else if (anim.type === "in") {
+    return "https://images.unsplash.com/photo-1557672172-298e090bd0f1?w=100&h=100&fit=crop&q=80";
+  } else if (anim.type === "out") {
+    return "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=100&h=100&fit=crop&q=80";
+  } else if (anim.type === "combo") {
+    return "https://images.unsplash.com/photo-1557683316-973673baf926?w=100&h=100&fit=crop&q=80";
+  } else if (anim.type === "loop") {
+    return "https://images.unsplash.com/photo-1557682260-96773eb01377?w=100&h=100&fit=crop&q=80";
+  }
+  return "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=100&h=100&fit=crop&q=80";
+};
+
 export const AnimationsSheet: React.FC<AnimationsSheetProps> = ({ clip, onUpdateClip, onClose }) => {
-  const [activeCategory, setActiveCategory] = useState<AnimationCategory>("All");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [activeCategory, setActiveCategory] = useState<AnimationCategory>("In");
   const [duration, setDuration] = useState<number>(clip.animationDuration || 0.6);
 
-  // Filter 200+ presets based on category and search query
+  // Filter 200+ presets based on category
   const filteredAnimations = useMemo(() => {
     return ANIMATIONS_200.filter((anim) => {
-      const matchesCategory =
-        activeCategory === "All" || anim.category === activeCategory;
-      const matchesSearch =
-        !searchQuery.trim() ||
-        anim.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        anim.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (anim.tag && anim.tag.toLowerCase().includes(searchQuery.toLowerCase()));
-      return matchesCategory && matchesSearch;
+      if (activeCategory === "All") return true;
+      return anim.category === activeCategory;
     });
-  }, [activeCategory, searchQuery]);
+  }, [activeCategory]);
 
   const handleSelectAnimation = (anim: AnimationPreset200) => {
     onUpdateClip({
@@ -330,205 +348,104 @@ export const AnimationsSheet: React.FC<AnimationsSheetProps> = ({ clip, onUpdate
     }
   };
 
+  // Main UI
   return (
-    <div className="bg-[#121218] text-white flex flex-col h-full overflow-hidden">
-      <SheetHeader
-        title={`Clip Animations (${ANIMATIONS_200.length}+ Presets)`}
-        icon={<Sparkles className="w-4 h-4 text-[#00E5FF]" />}
-        onClose={onClose}
-        onReset={clip.animationId ? handleClearAnimation : undefined}
-      />
-
-      {/* Search Bar & Animation Duration Control */}
-      <div className="px-3 pt-2.5 pb-1.5 space-y-2 shrink-0 border-b border-[#1C1C28]">
-        <div className="flex items-center gap-2">
-          {/* Search Input */}
-          <div className="flex-1 relative flex items-center bg-[#181822] rounded-xl px-2.5 py-1.5 border border-white/10 focus-within:border-[#00E5FF]/60 transition-colors">
-            <Search className="w-3.5 h-3.5 text-white/50 mr-2 shrink-0" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search 200+ animations (zoom, bounce, 3D, whip, beat...)"
-              className="bg-transparent text-xs text-white placeholder-white/40 focus:outline-none w-full"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="text-white/40 hover:text-white text-xs px-1"
-              >
-                ✕
-              </button>
-            )}
-          </div>
-
-          {/* Duration Slider Quick Display */}
-          <div className="flex items-center gap-1.5 bg-[#181822] px-2.5 py-1.5 rounded-xl border border-white/10 shrink-0">
-            <Clock className="w-3.5 h-3.5 text-[#00E5FF]" />
-            <span className="text-[11px] font-bold text-white/90 w-8 text-right">
-              {duration.toFixed(1)}s
-            </span>
-            <input
-              type="range"
-              min="0.2"
-              max="3.0"
-              step="0.1"
-              value={duration}
-              onChange={(e) => handleDurationChange(parseFloat(e.target.value))}
-              className="w-16 accent-[#00E5FF] cursor-pointer h-1.5 bg-black/40 rounded-lg"
-              title="Animation Duration"
-            />
-          </div>
+    <div className="flex-1 bg-[#181818] text-white flex flex-col h-full overflow-hidden">
+      {/* Header with Tabs and Checkmark */}
+      <div className="flex items-center justify-between px-4 h-12 shrink-0 border-b border-white/5">
+        <div className="flex items-center gap-6 h-full overflow-x-auto no-scrollbar mask-fade-right pr-4">
+          {["In", "Out", "Combo", "Loop", "3D & Warp"].map(tab => (
+            <button 
+              key={tab}
+              onClick={() => setActiveCategory(tab as AnimationCategory)}
+              className={`h-full relative text-[15px] font-medium transition-colors whitespace-nowrap ${activeCategory === tab ? "text-white" : "text-white/50 hover:text-white/80"}`}
+            >
+              {tab}
+              {activeCategory === tab && (
+                <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#00E5FF] rounded-t-full shadow-[0_0_8px_rgba(0,229,255,0.4)]" />
+              )}
+            </button>
+          ))}
         </div>
-
-        {/* Category Filter Horizontal Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1">
-          {ANIMATION_CATEGORIES.map((cat) => {
-            const count =
-              cat === "All"
-                ? ANIMATIONS_200.length
-                : ANIMATIONS_200.filter((a) => a.category === cat).length;
-            const isSelected = activeCategory === cat;
-            return (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1 shrink-0 ${
-                  isSelected
-                    ? "bg-[#00E5FF] text-black shadow-md shadow-[#00E5FF]/20"
-                    : "bg-[#1C1C26] text-white/70 hover:text-white hover:bg-[#262634]"
-                }`}
-              >
-                <span>{cat}</span>
-                <span
-                  className={`text-[10px] px-1 rounded ${
-                    isSelected ? "bg-black/20 text-black font-extrabold" : "text-white/40"
-                  }`}
-                >
-                  {count}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+        <button onClick={onClose} className="p-1.5 active:scale-95 transition-transform shrink-0 ml-2">
+          <Check className="w-6 h-6 text-white" strokeWidth={2} />
+        </button>
       </div>
 
       {/* 200+ Presets Scrollable Grid */}
-      <div className="flex-1 p-3 overflow-y-auto no-scrollbar min-h-0">
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
+      <div className="flex-1 overflow-y-auto p-4 no-scrollbar min-h-0">
+        <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-x-3 gap-y-5">
           {/* 1. None / Remove Card */}
           <button
             onClick={handleClearAnimation}
-            className={`flex flex-col items-center justify-center p-2 rounded-xl border transition-all active:scale-95 text-center group ${
-              !clip.animationId
-                ? "bg-[#00E5FF]/15 border-[#00E5FF] shadow-sm shadow-[#00E5FF]/20"
-                : "bg-[#181822] hover:bg-[#222230] border-white/5"
-            }`}
+            className="flex flex-col items-center gap-1.5 group"
           >
-            <div className="w-9 h-9 rounded-lg bg-black/40 flex items-center justify-center text-white/50 group-hover:text-white mb-1.5">
-              <Ban className="w-4 h-4 text-[#FF5252]" />
+            <div className={`w-full aspect-square rounded-[14px] flex items-center justify-center transition-all ${
+              !clip.animationId
+                ? "border-[1.5px] border-white bg-black/60 shadow-[0_0_15px_rgba(255,255,255,0.1)]"
+                : "border border-transparent bg-[#222222] group-hover:bg-[#2A2A2A]"
+            }`}>
+              <Ban className="w-7 h-7 text-white/40" strokeWidth={1.5} />
             </div>
-            <span className="text-[11px] font-bold text-white/90">None</span>
-            <span className="text-[9px] text-white/40 mt-0.5">No animation</span>
+            <span className={`text-[11px] whitespace-nowrap ${!clip.animationId ? "text-white font-medium" : "text-white/60"}`}>None</span>
           </button>
 
           {/* 2. List of Filtered Animation Cards */}
           {filteredAnimations.map((anim) => {
             const isSelected = clip.animationId === anim.id;
-
             return (
               <button
                 key={anim.id}
                 onClick={() => handleSelectAnimation(anim)}
-                className={`relative flex flex-col items-center justify-between p-2 rounded-xl border transition-all active:scale-95 text-center group ${
-                  isSelected
-                    ? "bg-[#00E5FF]/20 border-[#00E5FF] shadow-md shadow-[#00E5FF]/20 ring-1 ring-[#00E5FF]"
-                    : "bg-[#181822] hover:bg-[#222230] border-white/5 hover:border-white/20"
-                }`}
-                title={`${anim.name} • ${anim.description}`}
+                className="flex flex-col items-center gap-1.5 group"
               >
-                {/* Tag Badge (HOT, 3D, PRO, TREND, VIRAL) */}
-                {anim.tag && (
-                  <span
-                    className={`absolute top-1.5 right-1.5 text-[8px] font-extrabold px-1 rounded-md tracking-wider ${
-                      anim.tag === "HOT" || anim.tag === "VIRAL"
-                        ? "bg-[#FF5252] text-white"
-                        : anim.tag === "3D"
-                        ? "bg-[#A855F7] text-white"
-                        : anim.tag === "PRO"
-                        ? "bg-[#F59E0B] text-black"
-                        : "bg-[#00E5FF] text-black"
-                    }`}
-                  >
-                    {anim.tag}
-                  </span>
-                )}
-
-                {/* Animated Icon Preview Box */}
-                <div
-                  className={`w-9 h-9 rounded-lg flex items-center justify-center mb-1 transition-transform group-hover:scale-110 ${
-                    isSelected
-                      ? "bg-[#00E5FF] text-black font-bold"
-                      : "bg-black/50 text-[#00E5FF]"
-                  }`}
-                >
-                  {anim.category === "Beat & Flash" ? (
-                    <Zap className="w-4 h-4" />
-                  ) : anim.tag === "HOT" ? (
-                    <Flame className="w-4 h-4 text-[#FF5252]" />
-                  ) : anim.type === "in" ? (
-                    <span className="text-[10px] font-extrabold uppercase">IN</span>
-                  ) : anim.type === "out" ? (
-                    <span className="text-[10px] font-extrabold uppercase">OUT</span>
-                  ) : (
-                    <Sparkles className="w-4 h-4" />
+                <div className={`w-full aspect-square rounded-[14px] overflow-hidden flex items-center justify-center relative transition-all ${
+                  isSelected
+                    ? "border-[1.5px] border-white shadow-[0_0_15px_rgba(255,255,255,0.15)] scale-[0.98]"
+                    : "border border-transparent bg-[#222222] group-hover:bg-[#2A2A2A]"
+                }`}>
+                  <img 
+                    src={getAnimationImage(anim)} 
+                    alt={anim.name} 
+                    className={`w-full h-full object-cover transition-opacity ${isSelected ? "opacity-100" : "opacity-70 group-hover:opacity-90"}`} 
+                  />
+                  {anim.tag && (
+                    <span className="absolute top-1 right-1 text-[8px] font-bold bg-black/60 backdrop-blur-md px-1 rounded text-white border border-white/10">
+                      {anim.tag}
+                    </span>
                   )}
                 </div>
-
-                {/* Animation Name */}
-                <span
-                  className={`text-[11px] font-semibold truncate w-full text-center leading-tight ${
-                    isSelected ? "text-[#00E5FF] font-bold" : "text-white/90"
-                  }`}
-                >
+                <span className={`text-[11px] whitespace-nowrap truncate w-full px-1 text-center ${isSelected ? "text-white font-medium" : "text-white/60"}`}>
                   {anim.name}
                 </span>
-
-                {/* Subtitle / Category info */}
-                <span className="text-[9px] text-white/40 mt-0.5 truncate w-full">
-                  {anim.category} • {anim.duration}s
-                </span>
-
-                {/* Selected Indicator Check */}
-                {isSelected && (
-                  <div className="absolute bottom-1 right-1 w-3.5 h-3.5 rounded-full bg-[#00E5FF] text-black flex items-center justify-center">
-                    <Check className="w-2.5 h-2.5 stroke-[3]" />
-                  </div>
-                )}
               </button>
             );
           })}
         </div>
-
-        {filteredAnimations.length === 0 && (
-          <div className="py-12 flex flex-col items-center justify-center text-center text-white/40">
-            <Search className="w-8 h-8 mb-2 opacity-30" />
-            <p className="text-xs">No animations matching "{searchQuery}"</p>
-            <button
-              onClick={() => {
-                setSearchQuery("");
-                setActiveCategory("All");
-              }}
-              className="mt-2 text-xs text-[#00E5FF] underline"
-            >
-              Clear filter
-            </button>
-          </div>
-        )}
       </div>
+
+      {/* Duration Slider (only show if animation is selected) */}
+      {clip.animationId && (
+        <div className="px-5 py-3 border-t border-white/5 bg-[#181818] shrink-0">
+          <div className="flex items-center gap-4">
+            <span className="text-[12px] font-medium text-white/80 w-16">Duration</span>
+            <input
+              type="range"
+              min="0.1"
+              max="3.0"
+              step="0.1"
+              value={duration}
+              onChange={(e) => handleDurationChange(parseFloat(e.target.value))}
+              className="flex-1 accent-[#00E5FF] h-1.5 bg-[#2A2A2A] rounded-full appearance-none cursor-pointer"
+            />
+            <span className="text-[12px] font-mono text-white/80 w-8 text-right">{duration.toFixed(1)}s</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+
 
 // 5. ASPECT RATIO DRAWER
 interface AspectRatioSheetProps {

@@ -50,18 +50,12 @@ export const PreviewPlayer: React.FC<PreviewPlayerProps> = ({
   // Aspect ratio styling dimensions - optimized for phone & desktop preview
   const getAspectRatioClasses = () => {
     switch (project.aspectRatio) {
-      case "9:16":
-        return "aspect-[9/16] h-[34vh] sm:h-[40vh] max-h-[420px]";
-      case "16:9":
-        return "aspect-[16/9] w-full max-w-[500px] h-auto";
-      case "1:1":
-        return "aspect-square h-[32vh] sm:h-[38vh] max-h-[380px]";
-      case "4:5":
-        return "aspect-[4/5] h-[34vh] sm:h-[40vh] max-h-[400px]";
-      case "21:9":
-        return "aspect-[21/9] w-full max-w-[550px] h-auto";
-      default:
-        return "aspect-[9/16] h-[34vh] max-h-[400px]";
+      case "9:16": return "aspect-[9/16]";
+      case "16:9": return "aspect-[16/9]";
+      case "1:1": return "aspect-square";
+      case "4:5": return "aspect-[4/5]";
+      case "21:9": return "aspect-[21/9]";
+      default: return "aspect-[9/16]";
     }
   };
 
@@ -73,17 +67,26 @@ export const PreviewPlayer: React.FC<PreviewPlayerProps> = ({
     if (!ctx) return;
 
     // Use internal logical resolution of 1080p
-    const width = 1080;
-    let height = 1920;
-    if (project.aspectRatio === "16:9") height = 608;
-    else if (project.aspectRatio === "1:1") height = 1080;
-    else if (project.aspectRatio === "4:5") height = 1350;
-    else if (project.aspectRatio === "21:9") height = 460;
+    const baseWidth = 1080;
+    let baseHeight = 1920;
+    if (project.aspectRatio === "16:9") baseHeight = 608;
+    else if (project.aspectRatio === "1:1") baseHeight = 1080;
+    else if (project.aspectRatio === "4:5") baseHeight = 1350;
+    else if (project.aspectRatio === "21:9") baseHeight = 460;
+
+    // Dynamic resolution scaling for smooth playback (50% scale while playing)
+    const scale = isPlaying ? 0.5 : 1.0;
+    const width = Math.floor(baseWidth * scale);
+    const height = Math.floor(baseHeight * scale);
 
     canvas.width = width;
     canvas.height = height;
+    
+    // Reset transform and scale the context so drawing operations don't need to change
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.scale(scale, scale);
 
-    renderFrame(ctx, width, height, project, currentTime, {
+    renderFrame(ctx, baseWidth, baseHeight, project, currentTime, {
       showBeforeAfter: isBeforeAfterActive,
       showSafeZones: false,
       isPlaying,
@@ -104,12 +107,12 @@ export const PreviewPlayer: React.FC<PreviewPlayerProps> = ({
   return (
     <div
       ref={containerRef}
-      className="relative flex flex-col items-center justify-center bg-[#09090C] pt-2 pb-1.5 px-3 select-none w-full shrink-0"
+      className="relative flex flex-col items-center justify-center bg-[#09090C] pt-2 pb-1.5 px-3 select-none w-full h-full flex-1 min-h-0"
     >
       {/* Canvas Viewport Frame */}
-      <div className="relative flex items-center justify-center w-full max-w-full overflow-hidden">
+      <div className="relative flex items-center justify-center w-full h-full max-h-full overflow-hidden min-h-0">
         <div
-          className={`relative rounded-xl overflow-hidden shadow-2xl bg-black flex items-center justify-center transition-all ${
+          className={`relative h-full max-w-full rounded-xl overflow-hidden shadow-2xl bg-black flex items-center justify-center transition-all ${
             selectedClipId ? "ring-1 ring-[#00E5FF]/40" : "border border-[#1A1A22]"
           } ${getAspectRatioClasses()}`}
           onClick={onTogglePlay}
@@ -152,72 +155,79 @@ export const PreviewPlayer: React.FC<PreviewPlayerProps> = ({
       </div>
 
       {/* Media Playback & Action Bar directly below preview (matching screenshot) */}
-      <div className="w-full max-w-md mt-2 flex items-center justify-between px-3 text-[#A0A0B0]">
+      <div className="w-full mt-3 flex items-center justify-between px-2 text-[#A0A0B0] relative">
         {/* Left: Fullscreen Toggle */}
-        <button
-          id="btn-player-fullscreen"
-          onClick={toggleFullscreen}
-          className="p-1.5 rounded-lg text-white/70 hover:text-white hover:bg-white/10 active:scale-95 transition-all"
-          title="Fullscreen Preview"
-        >
-          {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-        </button>
+        <div className="flex-1 flex justify-start">
+          <button
+            id="btn-player-fullscreen"
+            onClick={toggleFullscreen}
+            className="p-1 rounded-lg text-white/70 hover:text-white active:scale-95 transition-all"
+            title="Fullscreen Preview"
+          >
+            {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
+          </button>
+        </div>
 
         {/* Center: Play / Pause */}
-        <button
-          id="btn-play-pause-center"
-          onClick={onTogglePlay}
-          className="w-10 h-10 rounded-full flex items-center justify-center bg-white text-black shadow-lg hover:brightness-110 active:scale-95 transition-all"
-          title={isPlaying ? "Pause (Space)" : "Play (Space)"}
-        >
-          {isPlaying ? (
-            <Pause className="w-4 h-4 fill-current" />
-          ) : (
-            <Play className="w-4 h-4 fill-current ml-0.5" />
-          )}
-        </button>
+        <div className="flex-1 flex justify-center">
+          <button
+            id="btn-play-pause-center"
+            onClick={onTogglePlay}
+            className="w-10 h-10 flex items-center justify-center text-white active:scale-95 transition-all"
+            title={isPlaying ? "Pause (Space)" : "Play (Space)"}
+          >
+            {isPlaying ? (
+              <Pause className="w-6 h-6 fill-current" />
+            ) : (
+              <Play className="w-6 h-6 fill-current" />
+            )}
+          </button>
+        </div>
 
-        {/* Right: Keyframe Diamond, Undo, Redo */}
-        <div className="flex items-center gap-1.5">
+        {/* Right: Keyframe Diamond, Copy/Off, Undo, Redo */}
+        <div className="flex-1 flex items-center justify-end gap-4 sm:gap-6">
           {onToggleKeyframe && (
             <button
               id="btn-player-keyframe"
               onClick={onToggleKeyframe}
               disabled={!selectedClipId}
-              className={`p-1.5 rounded-lg transition-all active:scale-95 ${
+              className={`relative transition-all active:scale-95 ${
                 selectedClipId
-                  ? "text-white/80 hover:text-[#00E5FF] hover:bg-white/10"
+                  ? "text-white/80 hover:text-white"
                   : "text-white/20 cursor-not-allowed"
               }`}
               title="Add Keyframe at Playhead"
             >
-              <Diamond className="w-4 h-4" />
+              <Diamond className="w-5 h-5 fill-transparent" strokeWidth={1.5} />
+              {selectedClipId && (
+                <div className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-black border border-white flex items-center justify-center">
+                  <span className="text-[8px] font-bold text-white leading-none mb-[1px]">+</span>
+                </div>
+              )}
             </button>
           )}
 
-          {onUndo && (
-            <button
-              id="btn-player-undo"
-              onClick={onUndo}
-              disabled={!canUndo}
-              className="p-1.5 rounded-lg text-white/70 hover:text-white hover:bg-white/10 disabled:text-white/20 disabled:cursor-not-allowed active:scale-95 transition-all"
-              title="Undo"
-            >
-              <RotateCcw className="w-4 h-4" />
-            </button>
-          )}
 
-          {onRedo && (
-            <button
-              id="btn-player-redo"
-              onClick={onRedo}
-              disabled={!canRedo}
-              className="p-1.5 rounded-lg text-white/70 hover:text-white hover:bg-white/10 disabled:text-white/20 disabled:cursor-not-allowed active:scale-95 transition-all"
-              title="Redo"
-            >
-              <RotateCw className="w-4 h-4" />
-            </button>
-          )}
+
+          <button
+            id="btn-player-undo"
+            onClick={onUndo}
+            disabled={!canUndo}
+            className="text-white/70 hover:text-white disabled:text-white/20 disabled:cursor-not-allowed active:scale-95 transition-all"
+            title="Undo"
+          >
+            <RotateCcw className="w-5 h-5" />
+          </button>
+
+          <button
+            id="btn-player-redo"
+            onClick={onRedo}
+            disabled={!canRedo}
+            className="text-white/70 hover:text-white disabled:text-white/20 disabled:cursor-not-allowed active:scale-95 transition-all"
+            title="Redo"
+          >
+            <RotateCw className="w-5 h-5" />
+          </button>
         </div>
       </div>
     </div>
